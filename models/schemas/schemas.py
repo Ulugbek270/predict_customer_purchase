@@ -2,7 +2,6 @@ from typing import List, Optional
 from datetime import datetime
 from pydantic import BaseModel
 
-# Goods schema
 class GoodsSchema(BaseModel):
     id: int
     name: str
@@ -12,7 +11,7 @@ class GoodsSchema(BaseModel):
 
     model_config = dict(from_attributes=True)
 
-# OrderItem schema
+
 class OrderItemSchema(BaseModel):
     id: int
     goods: GoodsSchema
@@ -21,7 +20,6 @@ class OrderItemSchema(BaseModel):
 
     model_config = dict(from_attributes=True)
 
-# Order schema
 class OrderSchema(BaseModel):
     id: int
     client_id: int
@@ -31,7 +29,7 @@ class OrderSchema(BaseModel):
 
     model_config = dict(from_attributes=True)
 
-# Customer schema
+
 class CustomerSchema(BaseModel):
     id: int
     client_id: int
@@ -69,7 +67,6 @@ class PredictionSchema(BaseModel):
     average_cycle_days: float
     cycle_variance: float
     confidence_score: float
-    urgency: str  # "high", "medium", "low"
     predicted_quantity: float
     order_count: int  # Total number of orders for this client-product
 
