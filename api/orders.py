@@ -2,15 +2,15 @@ from typing import List
 
 import requests.rq as rq
 from models.schemas.schemas import (
-    OrderSchema
+    RequirementSchema
 )
 
 from fastapi import APIRouter, HTTPException, Path
 
-router = APIRouter(prefix="/orders", tags=["Orders"])
+router = APIRouter(prefix="/requirements", tags=["Requirements"])
 
 
-@router.get("/", response_model=List[OrderSchema])
-async def get_all_orders():
-    return await rq.get_all_orders()
+@router.get("/", response_model=List[RequirementSchema])
+async def get_all_req():
+    return await rq.get_all_requirements()
 

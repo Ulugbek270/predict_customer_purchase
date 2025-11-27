@@ -14,14 +14,14 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 engine = create_async_engine(DATABASE_URL, echo=True)
 async_session = async_sessionmaker(engine, expire_on_commit=False)
 
+
 class Base(AsyncAttrs, DeclarativeBase):
     pass
+
+
 async def init_db():
     async with engine.begin() as conn:
-        from models.tables.clients import Client
-        from models.tables.customers import Customer
-        from models.tables.goods import Goods
-        from models.tables.orders import Order
-        from models.tables.order_items import OrderItem
+        from models.tables.tables_all import Requirement, ClientLocal, Agent, Goods, RequirementGoods
+
         await conn.run_sync(Base.metadata.create_all)
         logging.info("Schema created.")

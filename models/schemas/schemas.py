@@ -2,53 +2,53 @@ from typing import List, Optional
 from datetime import datetime
 from pydantic import BaseModel
 
+
 class GoodsSchema(BaseModel):
     id: int
-    name: str
-    unit: str
-    price: float
-    is_active: bool
+    name_en: str
 
     model_config = dict(from_attributes=True)
 
 
-class OrderItemSchema(BaseModel):
+class RequirementGoodsSchema(BaseModel):
     id: int
     goods: GoodsSchema
-    quantity: float
-    price_at_time: float
-
-    model_config = dict(from_attributes=True)
-
-class OrderSchema(BaseModel):
-    id: int
-    client_id: int
-    order_date: datetime
-    total_amount: float
-    items: Optional[List[OrderItemSchema]] = None
+    amount: float
+    cost_sell: float
 
     model_config = dict(from_attributes=True)
 
 
-class CustomerSchema(BaseModel):
+class AgentSchema(BaseModel):
     id: int
-    client_id: int
     full_name: str
-    phone: Optional[str]
-    email: Optional[str]
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    created_at: datetime
 
     model_config = dict(from_attributes=True)
 
-# Client schema
-class ClientSchema(BaseModel):
+
+class RequirementSchema(BaseModel):
     id: int
-    name: str
-    contact_name: Optional[str]
-    phone: Optional[str]
-    email: Optional[str]
+    agent_id: int
+    client_local_id: int
+    date: datetime
+    agent: Optional[AgentSchema] = None
+    items: Optional[List[RequirementGoodsSchema]] = None
+
+    model_config = dict(from_attributes=True)
+
+
+class ClientLocalSchema(BaseModel):
+    id: int
+    name_ru: str
+    contact_name: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
     created_at: datetime
-    customers: List[CustomerSchema] = []
-    orders: List[OrderSchema] = []
+    agents: List[AgentSchema] = []
+    requirements: List[RequirementSchema] = []
 
     model_config = dict(from_attributes=True)
 
@@ -56,22 +56,20 @@ class ClientSchema(BaseModel):
 class PredictionSchema(BaseModel):
     client_id: int
     client_name: str
-    contact_name: Optional[str]
-    phone: Optional[str]
-    email: Optional[str]
+    contact_name: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
     goods_id: int
     goods_name: str
-    unit: str
-    last_order_date: datetime
-    days_since_last_order: int
+    last_requirement_date: datetime
+    days_since_last_requirement: int
     average_cycle_days: float
     cycle_variance: float
     confidence_score: float
-    predicted_quantity: float
-    order_count: int  # Total number of orders for this client-product
+    predicted_amount: float
+    requirement_count: int
 
-    class Config:
-        from_attributes = True
+    model_config = dict(from_attributes=True)
 
 
 class PredictionsResponse(BaseModel):
@@ -79,3 +77,4 @@ class PredictionsResponse(BaseModel):
     generated_at: datetime
     total_predictions: int
 
+    model_config = dict(from_attributes=True)
