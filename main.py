@@ -2,13 +2,13 @@ import uvicorn
 from contextlib import asynccontextmanager
 import logging
 from fastapi import FastAPI
-from core.base import init_db
-from api import orders, predict
+# from core.base import init_db
+from api import  predict
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logging.info("Starting app...")
-    await init_db()
+    # await init_db()
 
     yield
 
@@ -22,7 +22,6 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
-app.include_router(orders.router)
 app.include_router(predict.router)
 
 if __name__ == "__main__":

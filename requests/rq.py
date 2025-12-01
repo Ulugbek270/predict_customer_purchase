@@ -1,77 +1,102 @@
+from typing import Dict, Any, List
 from collections import defaultdict
-from typing import List
-
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
-from models.schemas.schemas import RequirementSchema
-from models.tables.tables_all import Requirement, RequirementGoods, Goods
-from core.conn import connection
-from sqlalchemy import select
-
-@connection
-async def get_all_requirements(session):
-    result = await session.execute(
-        select(Requirement)
-        .options(
-            selectinload(Requirement.agent),
-            selectinload(Requirement.items).selectinload(RequirementGoods.goods),
-        )
-        .order_by(Requirement.id)
-    )
-    requirements = result.scalars().all()
-    return [RequirementSchema.model_validate(req, from_attributes=True) for req in requirements]
 
 
-@connection
-async def get_purchase_patterns(
-        session: AsyncSession,
+from core.remote_db import RemoteMySQL
+
+db = RemoteMySQL()
+
+
+
+def get_purchase_patterns(
         min_requirements: int = 3,
-) -> dict:
+) -> Dict[str, Any]:
     """
-    Analyze purchase patterns by grouping requirements by client and goods.
+    Analyze purchase patterns by grouping sales by client and goods.
     Returns patterns with dates, quantities, and related entities.
     """
-    result = await session.execute(
-        select(Requirement)
-        .options(
-            selectinload(Requirement.client),
-            selectinload(Requirement.agent),
-            selectinload(Requirement.items).selectinload(RequirementGoods.goods)
-        )
-        .order_by(Requirement.date)
-    )
-    requirements = result.scalars().all()
 
-    # Group by client and goods
+    query = """
+    SELECT 
+        s.sales_id,
+        s.client_id,
+        s.created_date,
+        s.agent_id,
+        c.client_name,
+        a.agent_name,
+        sg.goods_id,
+        g.goods_name,
+        sg.amount
+    FROM sales s
+    INNER JOIN sales_goods sg ON s.sales_id = sg.sales_id
+    INNER JOIN goods g ON sg.goods_id = g.goods_id
+    INNER JOIN client c ON s.client_id = c.client_id
+    INNER JOIN agent a ON s.agent_id = a.agent_id
+    WHERE sg.amount > 0
+    ORDER BY s.created_date DESC
+    """
+
+    results = db.query(query)
+
+    if not results:
+        return {
+            "patterns": [],
+            "total_patterns": 0,
+            "min_requirements_used": min_requirements
+        }
+
     patterns = defaultdict(lambda: defaultdict(lambda: {
         "dates": [],
-        "amount": [],
-        "prices": [],
-        "client": None,
-        "goods": None
+        "amounts": [],
+        "client_id": None,
+        "client_name": None,
+        "agent_id": None,
+        "agent_name": None,
+        "goods_id": None,
+        "goods_name": None
     }))
 
-    for requirement in requirements:
-        client_id = requirement.client_local_id
-        client = requirement.client
+    for row in results:
+        client_id = row["client_id"]
+        goods_id = row["goods_id"]
 
-        for item in requirement.items:
-            goods_id = item.goods_id
-            goods = item.goods
+        pattern = patterns[client_id][goods_id]
+        pattern["dates"].append(row["created_date"])
+        pattern["amounts"].append(float(row["amount"]))
+        pattern["client_id"] = client_id
+        pattern["client_name"] = row["client_name"]
+        pattern["agent_id"] = row["agent_id"]
+        pattern["agent_name"] = row["agent_name"]
+        pattern["goods_id"] = goods_id
+        pattern["goods_name"] = row["goods_name"]
 
-            # Store pattern data
-            pattern = patterns[client_id][goods_id]
-            pattern["dates"].append(requirement.date)
-            pattern["amount"].append(item.amount)
-            pattern["prices"].append(item.cost_sell)
-            pattern["client"] = client
-            pattern["goods"] = goods
+    # Filter and format patterns
+    formatted_patterns = []
 
-    # Filter patterns by minimum requirement count
-    filtered_patterns = defaultdict(dict)
     for client_id, goods_dict in patterns.items():
         for goods_id, pattern in goods_dict.items():
-            if len(pattern["dates"]) >= min_requirements:
-                filtered_patterns[client_id][goods_id] = pattern
+            purchase_count = len(pattern["dates"])
 
-    return filtered_patterns
+            if purchase_count >= min_requirements:
+                amounts = pattern["amounts"]
+
+                formatted_patterns.append({
+                    "client_id": pattern["client_id"],
+                    "client_name": pattern["client_name"],
+                    "agent_id": pattern["agent_id"],
+                    "agent_name": pattern["agent_name"],
+                    "goods_id": pattern["goods_id"],
+                    "goods_name": pattern["goods_name"],
+                    "purchase_count": purchase_count,
+                    "dates": pattern["dates"],
+                    "amounts": amounts
+
+                })
+
+    formatted_patterns.sort(key=lambda x: x["purchase_count"], reverse=True)
+
+    return {
+        "patterns": formatted_patterns,
+        "total_patterns": len(formatted_patterns),
+        "min_requirements_used": min_requirements
+    }
