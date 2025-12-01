@@ -1,17 +1,26 @@
 
-# **📘 Project Documentation (Simplified README)**
+# **📘 Project Documentation**
 
 This project provides a **prediction API** that analyzes client purchase patterns from a **remote MySQL database (via SSH tunnel)**.
-The API runs on **FastAPI**, and exposes endpoints at:
-**[http://localhost:8000/docs](http://localhost:8000/docs)**
+The API runs on **FastAPI** and exposes endpoints at:
+➡️ [http://localhost:8000/docs](http://localhost:8000/docs)
 
 ---
 
 # **🚀 Getting Started**
 
-## **1. Install Dependencies**
+## **1. Clone the Repository**
 
-Make sure you have Python 3.10+.
+```bash
+git clone <your-repo-url>
+cd <your-project-folder>
+```
+
+---
+
+## **2. Install Dependencies**
+
+Make sure you have **Python 3.10+** installed.
 
 ```bash
 pip install -r requirements.txt
@@ -19,28 +28,39 @@ pip install -r requirements.txt
 
 ---
 
-## **2. Check Your `.env`**
+## **3. Configure Environment**
 
-You must configure your SSH + MySQL credentials in the `.env` file.
+Create a `.env` file with your **SSH and MySQL credentials**:
 
+```dotenv
+SSH_HOST=<remote_host>
+SSH_PORT=<ssh_port>
+SSH_USER=<ssh_user>
+SSH_PASSWORD=<ssh_password>
 
-If these values are wrong, the API will not be able to connect to the remote DB.
+DB_HOST=<db_host>
+DB_PORT=<db_port>
+DB_USER=<db_user>
+DB_PASSWORD=<db_password>
+DB_NAME=<db_name>
+```
+
+> ⚠️ Incorrect values here will prevent the API from connecting to the database.
 
 ---
 
-## **3. Start the API Server**
+## **4. Run the API Server**
 
 ```bash
 uvicorn backend.main:app --reload
 ```
 
 Open API docs:
-
-➡️ **[http://localhost:8000/docs](http://localhost:8000/docs)**
+➡️ [http://localhost:8000/docs](http://localhost:8000/docs)
 
 ---
 
-# **📂 Project Structure (Simplified)**
+# **📂 Project Structure**
 
 ```
 project/
@@ -50,7 +70,7 @@ project/
 │   └── prediction.py        # Main prediction logic (cycle analysis)
 │
 ├── requests/
-│   └── rq.py                # Request layer calling MySQL using RemoteMySQL
+│   └── rq.py                # Service layer: SQL queries using RemoteMySQL
 │
 ├── api/
 │   └── predict.py           # FastAPI router for predictions
@@ -62,82 +82,72 @@ project/
 
 ---
 
-# **🔌 How It Works (Simple Explanation)**
+# **🔌 How It Works**
 
 ### **1. `core/remote_db.py` – Remote DB Connector**
 
-This file contains the `RemoteMySQL` class, which:
-
 * Opens an SSH tunnel
-* Connects to the remote MySQL database
-* Allows running `.query()` and `.execute()`
+* Connects to remote MySQL
+* Runs `.query()` and `.execute()`
 * Returns results as Python dictionaries
 
-This class is used everywhere you need DB access.
+Used everywhere you need database access.
 
 ---
 
-### **2. `requests/rq.py` – Request Layer**
+### **2. `requests/rq.py` – Service Layer**
 
-This module contains functions that:
+* Runs SQL queries using `RemoteMySQL`
+* Fetches sales, clients, goods data
+* Returns structured datasets for prediction
 
-* Use the `RemoteMySQL` object
-* Run SQL queries (e.g., get sales, clients, goods)
-* Return clean structured data for prediction
-* Prepare datasets for the prediction engine
-
-Think of it like the **service layer**.
+Think of it as the **bridge between DB and prediction engine**.
 
 ---
 
-### **3. `core/prediction.py` – Main Prediction Logic**
+### **3. `core/prediction.py` – Prediction Logic**
 
-This file contains:
+* Calculates purchase cycles
+* Scores variance & confidence
+* Predicts next order date & amount
+* Classifies patterns (e.g., highly regular)
+* Filters out irrelevant data
 
-* Purchase cycle calculation
-* Variance / confidence scoring
-* Next expected order date
-* Predicted order amount
-* Pattern classification
-* Filtering logic
-
-This is the **brain** of the system.
+This is the **brain of the system**.
 
 ---
 
 ### **4. `api/predict.py` – API Router**
 
-This exposes an endpoint:
+**Endpoint:**
 
 ```
 GET /predict/
 ```
 
-It:
-
 * Accepts filters (`min_requirements`, `confidence_threshold`)
-* Fetches DB data using `rq.py`
-* Applies prediction logic from `core/prediction.py`
-* Returns clean JSON results to the client
+* Fetches DB data via `rq.py`
+* Runs prediction logic from `core/prediction.py`
+* Returns JSON results
 
 All output is visible in Swagger UI.
 
 ---
 
-# **📊 What the API Does**
+# **📊 API Output**
 
 For each **client + product** pair, the system detects:
 
-* How often they buy
-* How stable their pattern is
+* Purchase frequency
+* Pattern stability
 * Last purchase date
-* Expected next purchase date
+* Predicted next purchase date
 * Predicted amount
 * Confidence score
 
-Used for:
+Useful for:
 
-* CRM integrations
+* CRM integration
 * Sales forecasting
 * Manager reminders
 * Detecting lost clients
@@ -163,13 +173,31 @@ Used for:
 
 ---
 
-# **✔️ Summary**
+# **💡 How to Run (Step by Step)**
 
-What you need to understand:
+1. Clone repo & navigate:
 
-* `.env` → credentials
-* `remote_db.py` → connects to DB
-* `rq.py` → runs queries
-* `prediction.py` → processes data
-* `predict.py` → API endpoint
-* `localhost:8000/docs` → test everything
+```bash
+git clone <your-repo-url>
+cd <your-project-folder>
+```
+
+2. Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+3. Configure `.env` with SSH + MySQL credentials.
+
+4. Start the API:
+
+```bash
+uvicorn main:app --reload
+```
+
+5. Test endpoints in Swagger UI:
+   ➡️ [http://localhost:8000/docs](http://localhost:8000/docs)
+
+6. Optional: Use Postman or any HTTP client to query `/predict/`.
+
