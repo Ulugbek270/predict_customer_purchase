@@ -1,7 +1,3 @@
-Here is a **clean, simple, developer-friendly README.md**.
-Short, clear, and to the point — exactly what your project needs.
-
----
 
 # **📘 Project Documentation (Simplified README)**
 
